@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  anpr-python
+
+  Sample SAM Template for anpr-python
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  AnprFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionUrlConfig:
+        AuthType: NONE
+      PackageType: Zip
+      MemorySize: 2048
+      Timeout: 30
+      Policies:
+      - AmazonRekognitionFullAccess
+      - AmazonS3ReadOnlyAccess
+      CodeUri: src/
+      Handler: app.handler
+      Runtime: python3.11
+      Architectures:
+      - x86_64
+
+Outputs:
+  AnprFunctionUrl:
+    Description: "The URL of the Lambda function"
+    Value: !GetAtt AnprFunctionUrl.FunctionUrl
+  AnprFunction:
+    Description: "Anpr Function ARN"
+    Value: !GetAtt AnprFunction.Arn
