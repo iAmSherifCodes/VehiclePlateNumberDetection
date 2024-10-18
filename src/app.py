@@ -1,5 +1,6 @@
 import json
 import boto3
+import logging
 import os
 
 def detect_text(photo, bucket):
@@ -25,12 +26,35 @@ def detect_text(photo, bucket):
 
     return str(best_text)
 
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 def handler(event, context):
-    photo = event['photo']
-    bucket = event['bucket']
-    text = detect_text(photo=photo, bucket=bucket)
-    return {
-        "body": json.dumps({
-            "result": text,
-        }),
-    }
+    try:
+        logger.info(f"Received event: {type(event)}")
+        logger.info(f"Items event: {event.items()}")
+        photo = event.get('photo')
+        bucket = event.get('bucket')
+        if not photo:
+            raise ValueError("'photo' is missing in the body")
+
+        if not bucket:
+            raise ValueError("'bucket' is missing in the body")
+
+        text = detect_text(photo=photo, bucket=bucket)
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'result': text}),
+            'headers': {
+                'Content-Type': 'application/json'
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)}),
+            'headers': {
+                'Content-Type': 'application/json'
+            }
+        }
