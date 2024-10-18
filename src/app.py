@@ -1,34 +1,39 @@
 import json
 import boto3
+import re
 import logging
 import os
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 def detect_text(photo, bucket):
-    session = boto3.Session(os.environ['AWS_ACCESS_KEY_ID'], os.environ['AWS_SECRET_ACCESS_KEY'], os.environ['AWS_SESSION_TOKEN'])
+    session = boto3.Session(
+        os.environ['AWS_ACCESS_KEY_ID'],
+        os.environ['AWS_SECRET_ACCESS_KEY'],
+        os.environ['AWS_SESSION_TOKEN'])
     client = session.client('rekognition')
 
-    response = client.detect_text(Image={'S3Object': {'Bucket': bucket, 'Name': photo}})
+    response = client.detect_text(
+        Image={
+            'S3Object': {
+                'Bucket': bucket,
+                'Name': photo}
+        }
+    )
     best_text = ""
+    plate_number_pattern = r"^[A-Z]{2,3}[-\s]?\d{3}[-\s]?[A-Z]{2,3}$"
 
     textDetections = response['TextDetections']
-    print('Detected text\n----------')
     for text in textDetections:
         detected_text = text['DetectedText']
-        print('Detected text:' + detected_text)
-        print('Confidence: ' + "{:.2f}".format(text['Confidence']) + "%")
-        print('Id: {}'.format(text['Id']))
-        if 'ParentId' in text:
-            print('Parent Id: {}'.format(text['ParentId']))
-        print('Type:' + text['Type'])
-        print()
-        if len(detected_text) >= 7:
+        if re.match(plate_number_pattern, detected_text):
             best_text = detected_text
+            break
 
     return str(best_text)
 
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 def handler(event, context):
     try:
         logger.info(f"Received event: {type(event)}")
@@ -42,9 +47,12 @@ def handler(event, context):
             raise ValueError("'bucket' is missing in the body")
 
         text = detect_text(photo=photo, bucket=bucket)
+
         return {
             'statusCode': 200,
-            'body': json.dumps({'result': text}),
+            'body': json.dumps(
+                {'result': text}
+            ),
             'headers': {
                 'Content-Type': 'application/json'
             }
