@@ -21,17 +21,14 @@ def detect_text(photo, bucket):
                 'Name': photo}
         }
     )
-    best_text = ""
-    plate_number_pattern = r"^[A-Z]{2,3}[-\s]?\d{3}[-\s]?[A-Z]{2,3}$"
+    plate_number_pattern = re.compile(r"^[A-Z]{2,3}[-\s]?\d{3}[-\s]?[A-Z]{2,3}$")
 
     textDetections = response['TextDetections']
     for text in textDetections:
-        detected_text = text['DetectedText']
-        if re.match(plate_number_pattern, detected_text):
-            best_text = detected_text
-            break
+        if plate_number_pattern.match(text['DetectedText']):
+            return text['DetectedText']
 
-    return str(best_text)
+    return "Plate Number Not Found"
 
 
 def handler(event, context):
